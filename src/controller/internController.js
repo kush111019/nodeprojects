@@ -1,78 +1,76 @@
 const collegeModel = require('../models/collegeModel')
-const internModel = require('../models/internModel')
+const internModel=require("../models/internModel")
 const validator = require('../validators/validator')
 const { default: mongoose } = require("mongoose");
-
-
-const createIntern = async function (req, res) {
-    try {
-        let data = req.body
-        if (!validator.isValidRequestBody(data)) {
-            return res.status(400).send({ status: false, msg: "pls provide an intern's details" })
-        }
-        else {
-
-            //using destruction
-            const { name, collegeName, email, mobile, collegeId } = data
-            if (!validator.isValid(name)) {
-                return res.status(400).send({ status: false, msg: "name is missing" })
-            }
-            if (!validator.isValid(collegeName)) {
-                return res.status(400).send({ status: false, msg: "college name is missing" })
-            }
-            if (!validator.isValid(email)) {
-                return res.status(400).send({ status: false, msg: "email is missing" })
-
-            }
-            if (!validator.isValid(mobile)) {
-                return res.status(400).send({ status: false, msg: "mobile number is missing" })
-            }
-            if (!validator.isValid(collegeId)) {
-                return res.status(400).send({ status: false, msg: "college Id is missing" })
-            }
-
-            //eamil validations using REGEX
-
-            if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-                return res.status(400).send({
-                    status: false,
-                    message: `${email} is not a valid email. Please provide a valid Email address to continue.`,
-                });
-            }
-
-            //MOBILE NUMBER VALIDATION
-            if (!/^(\+\d{1,3}[- ]?)?\d{10}$/.test(mobile)) {
-                return res.status(400).send({
-                    status: false,
-                    message: `${mobile} is not a valid mobile number, Please provide a valid mobile number to continue`,
-                });
-            }
-
-            //checking email and mobile number is already exists
-
-            const isEmailUsed = await internModel.findOne({ email, isDeleted: false })
-            if (isEmailUsed) {
-                return res.status(400).send({ status: false, msg: "Email is already used" })
-            }
-            const isNumebrUsed = await internModel.findOne({ mobile, isDeleted: false })
-            if (isNumebrUsed) {
-                return res.status(400).send({ status: false, msg: "MOBile number is already used" })
-            }
+const express=require("express")
+const object_id=mongoose.Types.ObjectId
 
 
 
-            //save data in database
+const createIntern=async function(req,res){
+try{
+     const data=req.body;
 
-            let saveData = await internModel.create(data)
-            console.log(saveData)
-            res.status(200).send({ status: true, msg: ` internship applied suceesfully at ${collegeName}`, data: saveData })
-        }
+      if(!validator.isValidRequestBody(data)){
+       
+          return res.status(400).send({status:false,msg:"send the data first"})
+      }
 
+      
+      let internMobile=data.mobile;
+      let internEmail=data.email;
+      let internName=data.name;
+      let internCollegeName=data.collegeName;
+    
+     
+      if(!validator.isValidMobileNumber(internMobile)){
+      return res.status(400).send({status:false,msg:"mobile is missing"})
+      }
+     
+      if(!validator.isValidEmail(internEmail)){
+         return res.status(400).send({status:false,msg:"email is missing"});
+     }
+
+     if(!validator.isValid(internName)){
+         return res.status(400).send({status:false,msg:"intern name is missing"})
+     }
+   
+     if(!validator.isValid(internCollegeName)){
+        return res.status(400).send({status:false,msg:"college name is missing"})
+      }
+ 
+      let collegeFetched=await collegeModel.findOne({name:internCollegeName})
+    
+    
+      if(!collegeFetched){
+          return res.status(400).send({status:false,msg:"invalid college name"})
+      }
+      
+      let emailAlreadyExist=await internModel.findOne({email:internEmail,isDeleted:false})
+      
+      if(emailAlreadyExist)
+      {
+          
+          return res.status(400).send({status:false,msg:"email already exists"})
+      }
+
+      let mobileAlreadyRegistered=await internModel.findOne({mobile:internMobile,isDeleted:false})
+      if(mobileAlreadyRegistered){
+          return res.status(400).send({status:false,msg:"mobile already registred"})
+      }
+        
+     let requiredRecord=await internModel.create(data);
+     if(requiredRecord)
+     res.status(201).send({status:true,data:requiredRecord})
+    }catch(err){
+
+        console.log("this is the error", error)
+        res.status(500).send({ status: false, msg: error.message })
 
     }
-    catch (error) {
-        console.log(error)
-        res.status(400).send({ status: false, msg: error.message })
-    }
+    
 }
-module.exports.createIntern = createIntern
+
+
+
+module.exports.createIntern=createIntern;
